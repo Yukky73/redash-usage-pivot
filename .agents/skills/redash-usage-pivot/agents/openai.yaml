@@ -1,0 +1,4 @@
+interface:
+  display_name: "Redash 利用実績CSV"
+  short_description: "組織ごとの日別利用時間をRedashから取得してCSVに集計"
+  default_prompt: "$redash-usage-pivot で組織ID 12345の直近30日分の利用実績をCSVにして。"

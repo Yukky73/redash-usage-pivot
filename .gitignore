@@ -1,0 +1,5 @@
+.env
+redash-team.env.example
+csv/
+__pycache__/
+.DS_Store
