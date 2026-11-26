@@ -4,18 +4,26 @@ ChatGPTデスクトップのWorkから、指定した組織の日別利用時間
 
 ## 初回だけ
 
-1. 自分の端末に、このスキル専用のローカル作業フォルダ（例 `Redash利用実績`）を作ります。共有・同期フォルダや既存のGitリポジトリの外に作成してください。チームから受け取った `redash-team.env.example` をそのフォルダに置き、ChatGPTデスクトップの **Work** で開きます。ChatGPTのスキル一覧から **Redash 利用実績CSV** をインストールします。
-2. Workに「Redash 利用実績CSVの初期設定をして」と頼みます。Pythonが見つからなければ、[Python公式サイト](https://www.python.org/downloads/) からPython 3をインストールし、もう一度初期設定を頼みます。macOSでは `python3 --version`、Windowsでは `py -3 --version` で確認できます。Windowsで `py` が使えない場合は `python --version` も確認できます。
-3. Workが作成した `.env` をテキストエディタで開き、`REDASH_USER_API_KEY=` の右側に自分のRedash User API Keyを入力します。チームのひな形を使わない場合は、`REDASH_BASE_URL` と `REDASH_QUERY_ID` も入力します。
+1. ChatGPTデスクトップの **Work** にチームのセットアップガイドのURLを貼り、「このページの手順に従って、このスキルをローカルで使えるようにして」と頼みます。チームガイドがなければ、このREADMEのURLと同じ依頼文を送ります。
+2. Workが専用フォルダの作成、ファイル配置、Pythonの確認、`.env` の初期化を進めます。ローカルアクセスやPythonのインストールに本人の操作が必要な場合は、Workの案内に従います。
+3. Workが案内した **`.env`** を開き、`REDASH_USER_API_KEY=` の右側に自分のRedash User API Keyを入力します。チームの共通設定がなければ、`REDASH_BASE_URL` と `REDASH_QUERY_ID` も入力します。
 
 ## 毎回の使い方
 
-Workで同じローカルフォルダを開き、例えば「Redash 利用実績CSVで、組織ID 12345の直近30日分を出して」と頼みます。日付で範囲を指定することもできます。CSVは作業フォルダの `csv/` に保存されます。
+Workで同じフォルダを開き、たとえば「このフォルダのSKILL.mdを使って、組織ID 12345の直近30日分のRedash利用実績をCSVにして」と頼みます。日付で範囲を指定することもできます。CSVは作業フォルダの `csv/` に保存されます。
 
-## 配布担当者向け
+## Work向けセットアップ手順
 
-公開用の [空欄ひな形](.agents/skills/redash-usage-pivot/assets/.env.example) を `redash-team.env.example` としてコピーし、チーム共通のURLとクエリIDだけを書いて社内で配布できます。利用者は、自分のキーを初回にローカルの `.env` に入力します。
+1. ローカル実行で、利用者のホームフォルダ直下に専用の `Redash利用実績` フォルダを用意します。共有・同期フォルダや既存のGitリポジトリの外に作ります。
+2. 次のファイルをこのリポジトリの同じリビジョンから取得し、作業フォルダに配置します。チームのガイドでリビジョンが指定されている場合は、その指定を使います。
+   - [SKILL.md](.agents/skills/redash-usage-pivot/SKILL.md) を直下に保存します。
+   - [export_usage.py](.agents/skills/redash-usage-pivot/scripts/export_usage.py) を `scripts/` に保存します。
+   - [空欄ひな形](.agents/skills/redash-usage-pivot/assets/.env.example) を `assets/.env.example` に保存します。
+3. チームガイドに共通設定があれば、直下の `redash-team.env.example` に保存します。APIキーの欄は空欄にします。
+4. 保存した `SKILL.md` の「初回セットアップ」に従い、ローカルのPythonを確認して `.env` を初期化します。作業フォルダと `.env` の場所を利用者に案内します。
+
+Workはローカルに保存した `SKILL.md` を読み、スクリプトを実行します。ChatGPTのスキル一覧への登録は不要です。WorkからのセットアップとCSV保存までの実機確認は未実施です。 [ChatGPT Workのローカルフォルダ](https://help.openai.com/en/articles/20001275-chatgpt-work-and-codex)
+
+## Redashの設定
 
 `REDASH_BASE_URL` には、APIがリダイレクトせずに応答するHTTPSのベースURLを指定します。クエリは `org_id`、`期間`（日付範囲）、`集計`（値は `DAY`）を受け取り、`period`、`org_id`、`space_name`、`user_name`、`duration_min` をCSVで返す必要があります。指定した組織以外の行が返った場合は、CSVを保存せずエラーを返します。
-
-スキル本体は [SKILL.md](.agents/skills/redash-usage-pivot/SKILL.md) と同じフォルダにあります。ChatGPTワークスペースに登録する際は、そのフォルダをZIPにしてスキルとしてアップロードし、対象メンバーに共有します。Workのローカル利用とスキルの共有が、そのメンバーのワークスペース設定で許可されている必要があります。配布前に、Workからの初期設定、各自のRedashキーでの取得、CSVの保存を端末1台で確認します。 [ChatGPTのスキル共有](https://help.openai.com/en/articles/20001066-skills-in-chatgpt)
