@@ -4,7 +4,7 @@ ChatGPTデスクトップのWorkから、指定した組織の日別利用時間
 
 ## 初回だけ
 
-1. チームから受け取った `redash-team.env.example` を作業フォルダに置き、そのフォルダをChatGPTデスクトップの **Work** で開きます。ChatGPTのスキル一覧から **Redash 利用実績CSV** をインストールします。
+1. 自分の端末に、このスキル専用のローカル作業フォルダ（例 `Redash利用実績`）を作ります。共有・同期フォルダや既存のGitリポジトリの外に作成してください。チームから受け取った `redash-team.env.example` をそのフォルダに置き、ChatGPTデスクトップの **Work** で開きます。ChatGPTのスキル一覧から **Redash 利用実績CSV** をインストールします。
 2. Workに「Redash 利用実績CSVの初期設定をして」と頼みます。Pythonが見つからなければ、[Python公式サイト](https://www.python.org/downloads/) からPython 3をインストールし、もう一度初期設定を頼みます。macOSでは `python3 --version`、Windowsでは `py -3 --version` で確認できます。Windowsで `py` が使えない場合は `python --version` も確認できます。
 3. Workが作成した `.env` をテキストエディタで開き、`REDASH_USER_API_KEY=` の右側に自分のRedash User API Keyを入力します。チームのひな形を使わない場合は、`REDASH_BASE_URL` と `REDASH_QUERY_ID` も入力します。
 
