@@ -16,6 +16,6 @@ Workで同じローカルフォルダを開き、例えば「Redash 利用実績
 
 公開用の [空欄ひな形](.agents/skills/redash-usage-pivot/assets/.env.example) を `redash-team.env.example` としてコピーし、チーム共通のURLとクエリIDだけを書いて社内で配布できます。利用者は、自分のキーを初回にローカルの `.env` に入力します。
 
-Redashのクエリは `org_id`、`期間`（日付範囲）、`集計`（値は `DAY`）を受け取り、`period`、`org_id`、`space_name`、`user_name`、`duration_min` をCSVで返す必要があります。
+`REDASH_BASE_URL` には、APIがリダイレクトせずに応答するHTTPSのベースURLを指定します。クエリは `org_id`、`期間`（日付範囲）、`集計`（値は `DAY`）を受け取り、`period`、`org_id`、`space_name`、`user_name`、`duration_min` をCSVで返す必要があります。指定した組織以外の行が返った場合は、CSVを保存せずエラーを返します。
 
 スキル本体は [SKILL.md](.agents/skills/redash-usage-pivot/SKILL.md) と同じフォルダにあります。ChatGPTワークスペースに登録する際は、そのフォルダをZIPにしてスキルとしてアップロードし、対象メンバーに共有します。Workのローカル利用とスキルの共有が、そのメンバーのワークスペース設定で許可されている必要があります。配布前に、Workからの初期設定、各自のRedashキーでの取得、CSVの保存を端末1台で確認します。 [ChatGPTのスキル共有](https://help.openai.com/en/articles/20001066-skills-in-chatgpt)

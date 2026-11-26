@@ -18,11 +18,20 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Optional
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.parse import urlsplit
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
 ENV_EXAMPLE = Path(__file__).resolve().parents[1] / "assets" / ".env.example"
 TEAM_TEMPLATE_NAME = "redash-team.env.example"
+
+
+class RedashRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise RuntimeError("Redash APIがリダイレクトを返しました。REDASH_BASE_URL に接続先のHTTPS URLを設定してください。")
+
+
+REDASH_OPENER = build_opener(RedashRedirectHandler())
 
 
 def load_dotenv(path: Path) -> None:
@@ -43,6 +52,14 @@ def required(name: str) -> str:
     return value
 
 
+def redash_base_url() -> str:
+    base_url = required("REDASH_BASE_URL").rstrip("/")
+    url = urlsplit(base_url)
+    if url.scheme != "https" or not url.hostname or url.username is not None or url.query or url.fragment:
+        raise RuntimeError("REDASH_BASE_URL に認証情報やクエリを含まないHTTPS URLを設定してください。")
+    return base_url
+
+
 def request_json(url: str, *, method: str = "GET", headers: dict[str, str], body: Optional[dict] = None) -> dict:
     payload = None if body is None else json.dumps(body, ensure_ascii=False).encode("utf-8")
     request_headers = {"Accept": "application/json", **headers}
@@ -50,7 +67,7 @@ def request_json(url: str, *, method: str = "GET", headers: dict[str, str], body
         request_headers["Content-Type"] = "application/json"
     request = Request(url, data=payload, headers=request_headers, method=method)
     try:
-        with urlopen(request, timeout=60) as response:
+        with REDASH_OPENER.open(request, timeout=60) as response:
             return json.loads(response.read().decode("utf-8"))
     except HTTPError as error:
         raise RuntimeError(f"Redash APIからHTTP {error.code}が返りました。") from error
@@ -61,7 +78,7 @@ def request_json(url: str, *, method: str = "GET", headers: dict[str, str], body
 def request_bytes(url: str, *, headers: dict[str, str]) -> bytes:
     request = Request(url, headers=headers, method="GET")
     try:
-        with urlopen(request, timeout=120) as response:
+        with REDASH_OPENER.open(request, timeout=120) as response:
             return response.read()
     except HTTPError as error:
         raise RuntimeError(f"Redash APIからHTTP {error.code}が返りました。") from error
@@ -111,7 +128,7 @@ def format_duration(value: Decimal) -> str:
     return f"{value.quantize(Decimal('0.01')):.2f}"
 
 
-def create_pivot_csv(source: Path, destination: Path) -> None:
+def create_pivot_csv(source: Path, destination: Path, org_id: str) -> None:
     required_columns = {"period", "org_id", "space_name", "user_name", "duration_min"}
     values: dict[tuple[str, str, str], dict[str, Decimal]] = defaultdict(lambda: defaultdict(Decimal))
     periods: set[str] = set()
@@ -124,7 +141,9 @@ def create_pivot_csv(source: Path, destination: Path) -> None:
             raise RuntimeError(f"ピボット元CSVに必要な列がありません: {', '.join(sorted(missing))}")
         for line_number, row in enumerate(reader, start=2):
             period = (row.get("period") or "").strip()
-            org_id = (row.get("org_id") or "").strip()
+            row_org_id = (row.get("org_id") or "").strip()
+            if row_org_id != org_id:
+                raise RuntimeError(f"元CSVの{line_number}行目の組織IDが指定と一致しません。")
             space_name = (row.get("space_name") or "").strip()
             user_name = (row.get("user_name") or "").strip()
             try:
@@ -134,7 +153,7 @@ def create_pivot_csv(source: Path, destination: Path) -> None:
             if not period:
                 raise RuntimeError(f"ピボット元CSVの{line_number}行目にperiodがありません。")
             periods.add(period)
-            values[(org_id, space_name, user_name)][period] += duration
+            values[(row_org_id, space_name, user_name)][period] += duration
 
     ordered_periods = sorted(periods)
     period_totals: dict[str, Decimal] = defaultdict(Decimal)
@@ -238,7 +257,7 @@ def main() -> int:
 
     load_dotenv(env_path)
     user_key = required("REDASH_USER_API_KEY")
-    base_url = required("REDASH_BASE_URL").rstrip("/")
+    base_url = redash_base_url()
     query_id = required("REDASH_QUERY_ID")
     result_id = wait_for_result(base_url, user_key, query_id, org_id, start, end)
     csv_dir = workspace / "csv"
@@ -248,7 +267,7 @@ def main() -> int:
         raw = Path(temporary) / "raw.csv"
         pivot = Path(temporary) / "pivot.csv"
         export_csv(base_url, query_id, result_id, user_key, raw)
-        create_pivot_csv(raw, pivot)
+        create_pivot_csv(raw, pivot, org_id)
         validate_pivot_csv(raw, pivot)
         pivot.replace(output)
     print(output)
